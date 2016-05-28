@@ -53,7 +53,7 @@ int main(int argc, char **argv) {
     delay(500);
 
     pinMode(port, INPUT);
-    pullUpDnControl(port, PUD_OFF);
+    pullUpDnControl(port, PUD_UP);
 
     // ignore start bit
     while (digitalRead(port) == HIGH) {
