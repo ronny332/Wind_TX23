@@ -3,8 +3,7 @@
 #include <unistd.h>
 #include <string>
 #include <unordered_map>
-
-int port = 0;
+#include <ctime>
 
 std::unordered_map<int, std::string> directions {
         {0b0000, "N"},
@@ -29,7 +28,9 @@ int main(int argc, char **argv) {
     if (wiringPiSetup() == -1)
         return 1;
 
-    bool debug = false;
+    bool debug{false};
+    int ns{1150};
+    int port{0};
 
     if (argc > 1) {
         std::string tmp;
@@ -38,12 +39,22 @@ int main(int argc, char **argv) {
             tmp = argv[i];
             if (tmp == "--debug") {
                 debug = true;
-                break;
             }
-
-            if (tmp == "--help") {
-                std::cout << "Usage: Wind_TX23 [options]\n\nOptions:\n--help\t\tthis help page\n--debug\t\tturn on debug messages\n--format\t=[ms, kmh], ms is default\n\n";
+            else if (tmp == "--help") {
+                std::cout << "Usage: Wind_TX23 [options]\n\n"
+                                     "Options:\n"
+                                     "--debug\t\tturn on debug messages\n"
+                                     "--format\t=[ms, kmh], ms is default\n"
+                                     "--help\t\tthis help page\n"
+                                     "--ns\t\t=[0-9*], nano seconds to wait, 1150 is default\n"
+                                     "--port\t\t=[0-9*], WiringPi port number\n\n";
                 exit(0);
+            }
+            else if (tmp.find("--ns=") != std::string::npos) {
+                ns = std::stoi(tmp.substr(tmp.find("=") + 1));
+            }
+            else if (tmp.find("--port=") != std::string::npos) {
+                port = std::stoi(tmp.substr(tmp.find("=") + 1));
             }
         }
     }
@@ -57,38 +68,41 @@ int main(int argc, char **argv) {
 
     // ignore start bit
     while (digitalRead(port) == HIGH) {
-        usleep(100);
+        usleep(50);
     }
 
     // wind meter pulls low, ignore
     while (digitalRead(port) == LOW) {
-        usleep(100);
+        usleep(50);
     }
 
-    // walk into first data field. field length = ~1200ns (~1,2ms), wait 500ns
-    usleep(500);
+    // walk into first data field. field length = ~1200ns (~1,2ms), wait 100ns
+    usleep(100);
 
     // data
-    bool data[41];
+    int data[41];
 
     if (debug) {
         std::cout << "raw data:\n";
     }
 
     for (int i = 0; i < 41; i++) {
-        if (debug && (i == 5 || i == 9 || i == 21 || i == 25 || i == 29)) {
-            std::cout << "\n";
-        }
+        data[i] = digitalRead(0);
 
-        data[i] = (digitalRead(0) == LOW) ? false : true;
-        if (debug) {
-            std::cout << data[i];
-        }
         // either digitalRead is too slow, or 1,2ms is too long. 1,15ms is working very well
-        usleep(1150);
+        usleep(ns);
     }
 
+    // raw output
     if (debug) {
+        for (int i = 0; i < 41; i++) {
+            if (i == 5 || i == 9 || i == 21 || i == 25 || i == 29) {
+                std::cout << "\n";
+            }
+            if (debug) {
+                std::cout << data[i];
+            }
+        }
         std::cout << "\n\n";
     }
 

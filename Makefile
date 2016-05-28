@@ -1,7 +1,7 @@
 CPPC=g++
-CPPFLAGS=-Wall -lwiringPi -std=gnu++11
+CPPFLAGS=-Wall -lwiringPi -std=gnu++11 -O3
 
-all: clean wind_tx23
+all: wind_tx23
 
 wind_tx23:
 	$(CPPC) $(CPPFLAGS) Wind_TX23.cpp -o Wind_TX23
